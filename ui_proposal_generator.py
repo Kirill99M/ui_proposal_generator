@@ -4,6 +4,7 @@ import openai
 import requests
 import streamlit as st
 from typing import Dict
+from proposal_combiner import combine
 
 st.title("UI Proposal Generator")
 
@@ -26,24 +27,9 @@ DESCRIPTION_PROMPT = """
 
 PROPOSAL_PROMPT = """
 Согласно прилагаемому изображению, предложи улучшения пользовательского опыта (UX).
-Выведи предложения, пронумеровав их.
+Выведи предложения, без нумерации, каждое преложение с новой строки.
 Вне зависимости от языка интерфейса, отвечай на русском.
 Не выводи ничего другого, кроме вышеобозначенных предложений.
-"""
-
-COMBINATION_PROMPT_TMPL = """
-Три агента предложили несколько шагов по улучшению пользовательского опыта (UX), их материалы приведены ниже.
-Объедини их ответы.
-Вне зависимости от языка интерфейса, отвечай на русском.
-Не выводи ничего другого, кроме финальных предложений.
-
------
-{openai_propositions}
------
-{google_gemini_propositions}
------
-{anthropic_propositions}
------
 """
 
 
@@ -165,12 +151,7 @@ def generate_proposals(image_bytes: bytes) -> None:
     st.text("Предложения от Anthropic:")
     st.text(anthropic_propositions)
     st.text("-----")
-    combination_prompt = COMBINATION_PROMPT_TMPL.format(
-    openai_propositions=openai_propositions,
-    google_gemini_propositions=google_gemini_propositions,
-    anthropic_propositions=anthropic_propositions)
-    combined_response = send_openai_request(base64_image, combination_prompt)
-    combined_propositions = combined_response.choices[0].message.content
+    combined_propositions = combine(anthropic_propositions, google_gemini_propositions, openai_propositions)
     st.text("Комбинированные предложения:")
     st.text(combined_propositions)
     st.text("-----")
